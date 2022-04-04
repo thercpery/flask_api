@@ -1,3 +1,5 @@
+import os
+import re
 from flask import Flask, session
 from flask_cors import CORS
 from flask_restful import Api
@@ -11,9 +13,13 @@ from models.user import UserModel
 from models.item import ItemModel
 from models.store import StoreModel
 
+uri = os.getenv("DATABASE_URL") or "sqlite:///data.db"  # or other relevant config var
+if uri.startswith("postgres://"):
+    uri = uri.replace("postgres://", "postgresql://", 1)
+
 # Init app
 app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///data.db"
+app.config["SQLALCHEMY_DATABASE_URI"] = uri or "sqlite:///data.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 CORS(app)
 app.secret_key = "rc"
@@ -24,8 +30,9 @@ db.init_app(app)
 @app.before_first_request
 def create_tables():
     UserModel.__table__.create(db.session.bind, checkfirst=True)
-    ItemModel.__table__.create(db.session.bind, checkfirst=True)
     StoreModel.__table__.create(db.session.bind, checkfirst=True)
+    ItemModel.__table__.create(db.session.bind, checkfirst=True)
+    
 jwt = JWT(app, authenticate, identity) # this creates a new endpoint called "/auth"
 
 # Routes
